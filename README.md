@@ -10,6 +10,8 @@
 
 - Explain the importance of TDD
 - Become familiar with TDD's three phases
+- Understand that edge cases are at the limit of the function’s behavior
+- Understand that corner cases are where two edge cases meet
 
 ### What is TDD (Test Driven Development)?
 
@@ -61,33 +63,43 @@ requirements. Below is a list of some of the most common assert statements.
 | `assertIsInstance(a, b)`    | `isinstance(a, b)`       |
 | `assertNotIsInstance(a, b)` | `not` `isinstance(a, b)` |
 
+### Introduction to Nose2 framework
+
+[Nose2](https://docs.nose2.io/en/latest/getting_started.html) is a popular test automation framework in Python that
+extends unittest to make testing easier. The other advantages of using the Nose framework are the enablement of auto
+discovery of test cases and documentation collection.
+
+The Nose framework has a rich set of [plugins](https://docs.nose2.io/en/latest/plugins.html) that aid in
+test execution, parallel (or multi-process) testing, logging & reporting, and more. It can also run doctests, unittests,
+as well as, no boilerplate tests. The plugins also add support for decorators, fixtures, parameterized testing, classes,
+and modules.
+
 ### Installing and Using Python's Nose
 
-Before starting the exercises below, you will need to install the `nosetest` test runner package. Installation of the
-`nosetest` runner is straightforward, following the standard "pip" install pattern. It's also usually a good idea to
+Before starting the exercises below, you will need to install the `nose2` test runner package. Installation of the
+`nose2` runner is straightforward, following the standard `pip` install pattern. It's also usually a good idea to
 work on your projects using virtualenv's, which keeps all the packages you use for various projects separate.
 
 The pip install is as easy as running this line:
 
 ```text
-pip install nose
+pip install nose2
 ```
 
 Once installed, you can execute a single test file.
 
 ```text
-$ nosetests example_unit_test.py
+$ nose2 example_unit_test.py
 ```
 
 Or execute a suite of tests in a folder.
 
 ```text
-$ nosetests /path/to/tests
+$ nose2 /path/to/tests
 ```
 
 The only standard you need to follow is to begin each test's method with `test_` to ensure that the `nosetest` runner
-can
-find your tests!
+can find your tests!
 
 Some useful command line options that you may wish to keep in mind include:
 
@@ -99,8 +111,326 @@ Some useful command line options that you may wish to keep in mind include:
 - `--tags=TAGS` allows you to place an `@TAG` above a specific test to only execute those, rather than the entire test
   suite.
 
+### Example Problem and Test-Driven Approach
+
+We are going to take a look at a really simple example to introduce both unit testing in Python and the concept of TDD.
+We will write a very simple calculator class, with add, subtract and other simple methods as you would expect.
+
+Following a TDD approach, let's say that we have a requirement for an `add` function, which will determine the sum of
+two numbers, and return the output. Let's write a failing test for this. To get started, Create a file named
+`test_calculator.py` in the `test` directory with the following contents.
+
+```python
+# test/test_calculator.py
+
+import unittest
+
+
+class TddInPythonExample(unittest.TestCase):
+
+    def test_calculator_add_method_returns_correct_result(self):
+        calc = Calculator()
+        result = calc.add(2, 2)
+        self.assertEqual(4, result)
+
+```
+
+Writing the test is fairly simple.
+
+- First, we `import` the standard `unittest` module from the Python standard library
+- Next, we need a class to contain the different test cases
+- Finally, a method is required for the test itself, with the only requirement being that it is named with `test_` at
+  the beginning, so that it may be picked up and executed by the `nose2` runner, which we will cover shortly
+
+With the structure in place, we can then write the test code. We initialize our calculator so that we can execute the
+methods on it. Following this, we can then call the `add` method which we wish to test, and store its value in the
+variable, result. Once this is complete, we can then make use of unittest's `assertEqual` method to ensure that our
+calculator's `add` method behaves as expected.
+
+Now you will use the `nose2` runner to execute the test. You could execute the test using the standard unittest
+runner, if you wish, by adding the following block of code to the end of your test file.
+
+```python
+if __name__ == '__main__':
+    unittest.main()
+```
+
+Note: This `if __name__ == '__main__':` will allow you to run the test using the standard way of executing Python files,
+`$ python test_calculator.py`. However, for this lecture you are going to make use of the `nose2` runner, which has
+some nice features such as being able to execute nose tests against a directory and running all tests, amongst other
+useful features.
+
+````text
+(venv) Sureshs-MBP:python-unit-testing-2 suresh$ nose2
+E
+======================================================================
+ERROR: test_calculator_add_method_returns_correct_result (test.test_calculator.TestCalculator)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/suresh/Documents/ga/python-unit-testing-2/test/test_calculator.py", line 7, in test_calculator_add_method_returns_correct_result
+    calc = Calculator()
+NameError: name 'Calculator' is not defined
+
+----------------------------------------------------------------------
+Ran 1 test in 0.000s
+
+FAILED (errors=1)
+````
+
+From the output `nose2` has given us, we can see that the problem relates to us not importing `Calculator` class. That's
+because we haven't created it yet! So let's go and define our Calculator in a file named `calculator.py` under the `src`
+directory and import it:
+
+```python
+# src/calculator.py
+
+class Calculator:
+
+    def add(self, x, y):
+        pass
+
+```
+
+```python
+# test/test_calculator.py
+
+import unittest
+from src.calculator import Calculator
+
+
+class TestCalculator(unittest.TestCase):
+
+    def test_calculator_add_method_returns_correct_result(self):
+        calc = Calculator()
+        result = calc.add(2, 2)
+        self.assertEqual(4, result)
+
+
+if __name__ == '__main__':
+    unittest.main()
+
+```
+
+Now that we have Calculator defined, let's see what `nose2` indicates to us now:
+
+```text
+(venv) Sureshs-MBP:python-unit-testing-2 suresh$ nose2
+F
+======================================================================
+FAIL: test_calculator_add_method_returns_correct_result (test.test_calculator.TestCalculator)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/suresh/Documents/ga/python-unit-testing-2/test/test_calculator.py", line 10, in test_calculator_add_method_returns_correct_result
+    self.assertEqual(4, result)
+AssertionError: 4 != None
+
+----------------------------------------------------------------------
+Ran 1 test in 0.000s
+
+FAILED (failures=1)
+```
+
+So, obviously, our add method is returning the wrong value, as it doesn't do anything at the moment. Handily, `nose2`
+gives us the offending line in the test, and we can then confirm what we need to change. Let's fix the method and see if
+our test passes now:
+
+```python
+class Calculator:
+
+    def add(self, x, y):
+        return x + y
+
+```
+
+```text
+(venv) Sureshs-MBP:python-unit-testing-2 suresh$ nose2
+.
+----------------------------------------------------------------------
+Ran 1 test in 0.000s
+
+OK
+
+```
+
+Success! We have defined our add method, and it works as expected. However, there is more work to do around this method
+to ensure that we have tested it properly.
+
+What would happen if someone were to add anything other than numbers? Python will actually allow for the addition of
+strings and other types, but in our case, for our calculator, it makes sense to only allow adding of numbers. Let's add
+another failing test for this case, making use of the assertRaises method to test if an exception is raised here:
+
+```python
+# test/test_calculator.py
+
+import unittest
+from src.calculator import Calculator
+
+
+class TestCalculator(unittest.TestCase):
+
+    def setUp(self):
+        self.calc = Calculator()
+
+    def test_calculator_add_method_returns_correct_result(self):
+        result = self.calc.add(2, 2)
+        self.assertEqual(4, result)
+
+    def test_calculator_returns_error_message_if_both_args_not_numbers(self):
+        self.assertRaises(ValueError, self.calc.add, 'two', 'three')
+
+
+if __name__ == '__main__':
+    unittest.main()
+
+```
+
+You can see from above that we added the test and are now checking for a ValueError to be raised, if we pass in strings.
+We could also add more checks for other types, but for now, we'll keep things simple. You may also notice that we've
+made use of the `setup()` method. This allows us to put things in place before each test case. So, as we need our
+`Calculator` object to be available in both test cases, it makes sense to initialize this in the setUp method. Let's see
+what `nose2` indicates to us now:
+
+```text
+(venv) Sureshs-MBP:python-unit-testing-2 suresh$ nose2
+.F
+======================================================================
+FAIL: test_calculator_returns_error_message_if_both_args_not_numbers (test.test_calculator.TestCalculator)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/suresh/Documents/ga/python-unit-testing-2/test/test_calculator.py", line 15, in test_calculator_returns_error_message_if_both_args_not_numbers
+    self.assertRaises(ValueError, self.calc.add, 'two', 'three')
+AssertionError: ValueError not raised by add
+
+----------------------------------------------------------------------
+Ran 2 tests in 0.000s
+
+FAILED (failures=1)
+
+```
+
+Clearly, `nose2` indicates to us that we are not raising the `ValueError` when we expect to be. Now that we have a new
+failing test, we can code the solution to make it pass.
+
+```python
+# src/calculator.py
+
+class Calculator:
+
+    def add(self, x, y):
+        number_types = (int, float, complex)
+
+        if isinstance(x, number_types) and isinstance(y, number_types):
+            return x + y
+        else:
+            raise ValueError
+
+```
+
+From the code above, you can see that we've added a small addition to check the types of the values and whether they
+match what we want. One approach to this problem could mean that you follow duck typing, and simply attempt to use it as
+a number, and `try/except` the errors that would be raised in other cases. The above is a bit of an edge case and means
+we must check before moving forward. As mentioned earlier, strings can be concatenated with the plus symbol, so we only
+want to allow numbers. Utilising the isinstance method allows us to ensure that the provided values can only be numbers.
+
+To complete the testing, there are a couple of different cases that we can add. As there are two variables, it means
+that both could potentially not be numbers. Add the test case to cover all the scenarios.
+
+```python
+# test/test_calculator.py
+
+import unittest
+from src.calculator import Calculator
+
+
+class TestCalculator(unittest.TestCase):
+
+    def setUp(self):
+        self.calc = Calculator()
+
+    def test_calculator_add_method_returns_correct_result(self):
+        result = self.calc.add(2, 2)
+        self.assertEqual(4, result)
+
+    def test_calculator_returns_error_message_if_both_args_not_numbers(self):
+        self.assertRaises(ValueError, self.calc.add, 'two', 'three')
+
+    def test_calculator_returns_error_message_if_x_arg_not_number(self):
+        self.assertRaises(ValueError, self.calc.add, 'two', 3)
+
+    def test_calculator_returns_error_message_if_y_arg_not_number(self):
+        self.assertRaises(ValueError, self.calc.add, 2, 'three')
+
+
+if __name__ == '__main__':
+    unittest.main()
+
+```
+
+When we run all these tests now, we can confirm that the method meets our requirements!
+
+```text
+(venv) Sureshs-MBP:python-unit-testing-2 suresh$ nose2
+....
+----------------------------------------------------------------------
+Ran 4 tests in 0.000s
+
+OK
+
+```
+
+### Edge Cases
+
+The situation where the test examines either the beginning or the end of a range, but not the middle, is called an edge
+case. In a simple, one-dimensional problem, the two edge cases should always be tested along with at least one internal
+point. This ensures that you have good coverage over the range of values.
+
+Anecdotally, it is important to test edges cases because this is where errors tend to arise. Qualitatively different
+behavior happens at boundaries. As such, they tend to have special code dedicated to them in the implementation.
+
+Consider the following simple Fibonacci function:
+
+```python
+def fib(n):
+    if n == 0 or n == 1:
+        return n
+    else:
+        return fib(n - 1) + fib(n - 2)
+```
+
+This function has two edge cases: zero and one. For these values of n, the `fib()` function does something special that
+does not apply to any other values. Such cases should be tested explicitly. A minimally sufficient test suite for this
+function (assuming the fib function is in a file called `mod.py`) would be:
+
+```python
+from mod import fib
+
+
+def test_fib0():
+    # test edge 0
+    obs = fib(0)
+    assert obs == 0
+
+
+def test_fib1():
+    # test edge 1
+    obs = fib(1)
+    assert obs == 1
+
+
+def test_fib6():
+    # test internal point
+    obs = fib(6)
+    assert obs == 8
+```
+
+Different functions will have different edge cases. Often, you need not test for cases that are outside the valid range,
+unless you want to test that the function fails. In the `fib()` function negative and noninteger values are not valid
+inputs. Tests for these classes of numbers serve you well if you want to make sure that the function fails as expected.
+Indeed, we learned in the assertions section that this is actually quite a good idea.
+
 ### Further Reading
 
 This section provides more resources on the topic if you are looking to go deeper.
 
-- 
+- [What is Test Driven Development (TDD)? Tutorial with Example](https://www.guru99.com/test-driven-development.html)
+- [Test Driven Development (TDD) in Agile : Steps and Benefits](https://staragile.com/blog/test-driven-development)
